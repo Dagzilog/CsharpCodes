@@ -143,6 +143,7 @@ namespace ATMApp
                     accBalance -= withdrawed;
                     isWithdraw = true;
                     repeat = 0;
+                    // Pogi si louis
                     Console.WriteLine("Do you want to print receipt? : ");
                     string choice = Console.ReadLine();
                     if (choice.Equals("Yes", StringComparison.OrdinalIgnoreCase)) {
