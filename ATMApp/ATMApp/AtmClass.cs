@@ -202,6 +202,28 @@ namespace ATMApp
                 }
             }
             Console.Write("Do you want to see receipt: ");
+            string choice = Console.ReadLine(); 
+            if (choice.Equals("Yes", StringComparison.OrdinalIgnoreCase))
+            {
+                receipt();
+            }
+            else
+            {
+                Console.WriteLine("Thank you for using our ATM");
+                Environment.Exit(0);
+            }
+            Console.Write("Do you want Another operation: ");
+            choice = Console.ReadLine();
+            if (choice.Equals("Yes", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine("Proceeding. "); Thread.Sleep(500); Console.WriteLine(". . .");
+                appScreen();
+            }
+            else
+            {
+                Console.WriteLine("Thank you for using our ATM!");
+                Environment.Exit(0);
+            }
         }
         public void changePass()
         {
