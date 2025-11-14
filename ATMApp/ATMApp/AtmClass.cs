@@ -156,7 +156,7 @@ namespace ATMApp
             if (choice.Equals("Yes", StringComparison.OrdinalIgnoreCase))
             {
                 receipt();
-                break;
+                
             }
             else
             {
@@ -164,7 +164,7 @@ namespace ATMApp
                 Environment.Exit(0);
             }
             Console.Write("Do you want to do another operation: ");
-            string choice = Console.ReadLine();
+            choice = Console.ReadLine();
             if (choice.Equals("Yes", StringComparison.OrdinalIgnoreCase))
             {
                 Console.WriteLine("Proceeding. "); Thread.Sleep(500); Console.WriteLine(". . .");

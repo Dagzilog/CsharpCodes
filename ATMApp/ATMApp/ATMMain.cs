@@ -2,9 +2,9 @@
 using System;
 using System.Threading;
 
-namespace AtmSpace
+namespace ATMApp
 {
-    class AtmMain
+    public class AtmMain
     {
         public static void Main(string[] args)
         {
