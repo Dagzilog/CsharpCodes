@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -41,6 +42,7 @@ namespace ATMApp
         private bool isDeposit = true;
         private double withdrawed = 0;
         private double deposited = 0;
+
         public void logIn()
         {
             Boolean repeat = true;
@@ -74,7 +76,7 @@ namespace ATMApp
         public void appScreen()
         {
                 Console.WriteLine("--- ATM SCREEN ---");
-            bool repeat = true;
+                bool repeat = true;
 
             while (repeat )
             {
@@ -144,19 +146,34 @@ namespace ATMApp
                     isWithdraw = true;
                     repeat = 0;
                     // Pogi si louis
-                    Console.WriteLine("Do you want to print receipt? : ");
-                    string choice = Console.ReadLine();
-                    if (choice.Equals("Yes", StringComparison.OrdinalIgnoreCase)) {
-                        receipt();
-                        break;
-                    } else
-                    {
-                        Console.WriteLine("Thank you for using our ATM");
-                        Environment.Exit(0);
-                    }
+                    
 
                 } else { repeat--; Console.WriteLine("Wrong Password \n Tries Left: " + repeat + "\n"); if (repeat == 0) { Console.WriteLine("Wrong Password\nTry again later\n" +
                     "ATM Exiting"); Environment.Exit(0); } }
+            }
+            Console.WriteLine("Do you want to print receipt? : ");
+            string choice = Console.ReadLine();
+            if (choice.Equals("Yes", StringComparison.OrdinalIgnoreCase))
+            {
+                receipt();
+                break;
+            }
+            else
+            {
+                Console.WriteLine("Thank you for using our ATM");
+                Environment.Exit(0);
+            }
+            Console.Write("Do you want to do another operation: ");
+            string choice = Console.ReadLine();
+            if (choice.Equals("Yes", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.WriteLine("Proceeding. "); Thread.Sleep(500); Console.WriteLine(". . .");
+                appScreen();
+            }
+            else
+            {
+                Console.WriteLine("Thank you for using our ATM!");
+                Environment.Exit(0);
             }
         }
         public void deposit()
@@ -169,8 +186,11 @@ namespace ATMApp
                 string pass = Console.ReadLine();
                 if (pass == password)
                 {
-                
-
+                    Console.Write("How much are you going to deposit:  $");
+                    deposited = Convert.ToDouble(Console.ReadLine());
+                    accBalance += deposited;
+                    isDeposit = true;
+                    repeat = 0;
                 }
                 else
                 {
@@ -181,6 +201,7 @@ namespace ATMApp
                     }
                 }
             }
+            Console.Write("Do you want to see receipt: ");
         }
         public void changePass()
         {
@@ -255,6 +276,7 @@ namespace ATMApp
             if (isWithdraw) {
             Console.WriteLine("You withdraw today : " + withdrawed);
                 Console.WriteLine("Total ACCOUNT BALANCE : " + accBalance);
+               
             }
             Console.WriteLine("BALANCE : $0000");
             Thread.Sleep(500);
