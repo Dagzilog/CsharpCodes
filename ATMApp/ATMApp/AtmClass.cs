@@ -96,12 +96,12 @@ namespace ATMApp
 
                         case 1:
                             repeat = false;
-                            isWithdraw = true;
                             Console.WriteLine("\n--- Withdraw ---");
                             withdrawal();
                             break;
                         case 2:
                             Console.WriteLine("\n--- Deposit ---");
+                            deposit();
                             repeat = false;
                             break;
                         case 3:
@@ -109,7 +109,11 @@ namespace ATMApp
                             isCheckBal = true;
                             repeat = false;
                             checkBal();
-                            
+                            break;
+                        case 4:
+                            Console.WriteLine("\n--- Change Password ---");
+                            repeat = false;
+                            changePass();
                             break;
                         case 5:
                             Console.WriteLine("Thank you for using the ATM!");
@@ -161,7 +165,7 @@ namespace ATMApp
             else
             {
                 Console.WriteLine("Thank you for using our ATM");
-                Environment.Exit(0);
+                
             }
             Console.Write("Do you want to do another operation: ");
             choice = Console.ReadLine();
@@ -210,7 +214,7 @@ namespace ATMApp
             else
             {
                 Console.WriteLine("Thank you for using our ATM");
-                Environment.Exit(0);
+                
             }
             Console.Write("Do you want Another operation: ");
             choice = Console.ReadLine();
@@ -235,7 +239,20 @@ namespace ATMApp
                 string pass = Console.ReadLine();
                 if (pass == password)
                 {
+                    Console.Write("Current password: ");
+                    string currPass = Console.ReadLine();
+                    Console.Write("New password: ");
+                    string newPass = Console.ReadLine();
+                    Console.Write("Confirm new password: ");
+                    string confPass = Console.ReadLine();
 
+                    if (currPass == password && newPass == confPass)
+                    {
+                        Console.WriteLine("password succesfully change proceeding to log out.");
+                        Thread.Sleep(1000);
+                        password = newPass;
+                        logIn();
+                    }
 
                 }
                 else
@@ -250,7 +267,14 @@ namespace ATMApp
         }
         public void checkBal()
         {
-            
+            if (!isCheckBal)
+            {
+                Console.WriteLine("BALANCE : $0000");
+                Thread.Sleep(500);
+                Console.WriteLine(". . .");
+                Thread.Sleep(500);
+                Console.WriteLine("BALANCE : $" + accBalance);
+            }
             if (isCheckBal)
             {
                 byte repeat = 3;
@@ -267,7 +291,6 @@ namespace ATMApp
                         Thread.Sleep(500);
                         Console.WriteLine("BALANCE : $" + accBalance);
                         repeat = 0;
-
                     }
                     else
                     {
@@ -295,14 +318,26 @@ namespace ATMApp
         }
         public void receipt()
         {
-            if (isWithdraw) {
-            Console.WriteLine("You withdraw today : " + withdrawed);
+            if (isWithdraw && isDeposit)
+            {
+                Console.WriteLine("You withdraw today : " + withdrawed);
+                Console.WriteLine("You deposited today : " + deposited);
                 Console.WriteLine("Total ACCOUNT BALANCE : " + accBalance);
-               
             }
-            Console.WriteLine("BALANCE : $0000");
-            Thread.Sleep(500);
-            Console.WriteLine("BALANCE : $" + accBalance);
+            else if (isWithdraw)
+            {
+                Console.WriteLine("You withdraw today : " + withdrawed);
+                Console.WriteLine("BALANCE : $0000");
+                Thread.Sleep(500);
+                Console.WriteLine("BALANCE : $" + accBalance);
+            }
+            else if (isDeposit)
+            {
+                Console.WriteLine("You deposited today : " + deposited);
+                Console.WriteLine("BALANCE : $0000");
+                Thread.Sleep(500);
+                Console.WriteLine("BALANCE : $" + accBalance);
+            }
         }
     }
 }
