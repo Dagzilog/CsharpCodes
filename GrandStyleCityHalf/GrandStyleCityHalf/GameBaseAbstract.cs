@@ -340,23 +340,23 @@ And finally, you step onto the grand runway, ready to show off your ultimate mas
         }
 
         // save and load player pero isang beses lang to meaning if nag new game nanaman sya mavovoid kasi json file lang to na isa
-        protected void SavePlayer(PlayerClass player)
+        protected void SavePlayer(ref PlayerStruct player)
         {
             string json = JsonSerializer.Serialize(player, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(SaveFilePath, json);
         }
 
-        protected PlayerClass LoadPlayer()
+        protected PlayerStruct LoadPlayer()
         {
             LoadingScreen();
             if (!File.Exists(SaveFilePath))
             {
                 Console.WriteLine("No saved game found.");
                 Console.ReadKey();
-                return null!;
+                return new PlayerStruct();
             }
             string json = File.ReadAllText(SaveFilePath);
-            return JsonSerializer.Deserialize<PlayerClass>(json)!;
+            return JsonSerializer.Deserialize<PlayerStruct>(json)!;
         }
 
         //eto isahang print statement na lang ng summary ng player
@@ -369,7 +369,7 @@ And finally, you step onto the grand runway, ready to show off your ultimate mas
             Console.ForegroundColor = ConsoleColor.White;
             Console.WriteLine(value);
         }
-        protected void ShowPlayerSummary(PlayerClass p)
+        protected void ShowPlayerSummary(ref PlayerStruct p)
         {
             Console.Clear();
             PrintGameName();
@@ -380,15 +380,14 @@ And finally, you step onto the grand runway, ready to show off your ultimate mas
             PrintLabelValue("Name", p.PlayerName);
             PrintLabelValue("Gender", genderOptions[p.Gender]);
 
-            
             string hairStyleName;
-            if (p.Gender == 1) 
+            if (p.Gender == 1)
             {
                 hairStyleName = (p.Hair == 2)
                     ? HairCustomizationBraided[p.HairCustomization]
                     : HairCustomizationFemale[p.HairCustomization];
             }
-            else 
+            else
             {
                 hairStyleName = (p.Hair == 2)
                     ? HairCustomizationBraided[p.HairCustomization]
@@ -397,26 +396,21 @@ And finally, you step onto the grand runway, ready to show off your ultimate mas
 
             PrintLabelValue("Hair", $"{hairStyleName} - {HairColors[p.HairColor]}");
 
-            
             PrintLabelValue("Face Shape", FaceShapes[p.FaceShape]);
             PrintLabelValue("Nose Shape", NoseShapes[p.NoseShape]);
             PrintLabelValue("Eye Color", EyeColors[p.EyeColor]);
             PrintLabelValue("Skin Tone", SkinTones[p.SkinTone]);
             PrintLabelValue("Body Type", BodyTypes[p.BodyType]);
 
-            
             PrintLabelValue("Top Attire", TopAttireOptions[p.TopAttire]);
 
-            
             PrintLabelValue("Earrings", string.Join(", ", p.EarringsList.Select(x => AccessoryEarrings[x])));
             PrintLabelValue("Necklaces", string.Join(", ", p.NecklacesList.Select(x => AccessoryNecklaces[x])));
             PrintLabelValue("Bracelets", string.Join(", ", p.BraceletsList.Select(x => AccessoryBracelets[x])));
             PrintLabelValue("Rings", string.Join(", ", p.RingsList.Select(x => AccessoryRings[x])));
 
-            
             PrintLabelValue("Shoes", $"{Shoes[p.Shoes]} - {ShoeColors[p.ShoeColor]}");
 
-            
             PrintLabelValue("Pose", Poses[p.Pose]);
             PrintLabelValue("Video Mode", VideoModes[p.VideoMode]);
             PrintLabelValue("Background", Backgrounds[p.Background]);
