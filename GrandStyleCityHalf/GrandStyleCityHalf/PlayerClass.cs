@@ -8,6 +8,9 @@ namespace GrandStyleCityHalf
 {
     public class PlayerClass
     {
+
+
+
         public string PlayerName { get; set; } = "Player"; // bale kung napindot mo kagad yung enter kasi nagmamadali ka eto lalabas dapat na name
         public byte Gender { get; set; }
         public byte Hair { get; set; }

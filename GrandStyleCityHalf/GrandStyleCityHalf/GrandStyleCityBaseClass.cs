@@ -36,6 +36,7 @@ namespace GrandStyleCityHalf
 
         public override void NewGame()
         {
+            LoadingScreen();
             // eto yung sinasabe kong player class na syempre isang beses lang masasave and mavovoid if nag new game ulit
             PlayerClass player = new PlayerClass();
             player.SaveDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");

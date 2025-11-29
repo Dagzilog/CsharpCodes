@@ -31,7 +31,42 @@ namespace GrandStyleCityHalf
 
     public abstract class GameBaseAbstract : GameInterface
     {
-        //eto lahat ng arrray options na gagamitin haha taena ganto kadame yung ginawa kong table sa sql :) ays 
+        public GameBaseAbstract() {
+            LoadingScreen();
+        }
+        
+        // method para sa loading screen 
+        public void LoadingScreen()
+        {
+            Console.Clear();
+            PrintGameName();
+            Console.ForegroundColor = ConsoleColor.Green;
+
+            int totalBlocks = 45;
+            char block = '█';     
+            char empty = ' ';     
+
+            for (int i = 0; i <= totalBlocks; i++)
+            {
+                Console.Write("\r");
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.Write("[");
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.Write(new string(block, i));
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.Write(new string(empty, totalBlocks - i));
+                Console.Write("] ");
+                int percent = (i * 100) / totalBlocks;
+                Console.Write($"{percent}%");
+                Thread.Sleep(100);
+            }
+
+            Console.ResetColor();
+            Console.WriteLine("\nFinnish loading\n Press Anything To Continue: ");Console.ReadKey();
+            Console.Clear();
+        }
+
+        //eto lahat ng arrray options na gagamitin haha taena ganto kadame yung ginawa kong table sa sql :) ays  pero in this case array palang
         protected string SaveFilePath = "savegame.json";
         //braided option only if user pick braided hairCustomization only if girl
         protected string[] gameModes = { "New Game", "Load Game", "Campaign Mode", "Credits", "Exit Game" };
@@ -69,7 +104,7 @@ namespace GrandStyleCityHalf
         public abstract void LoadGame();
         public virtual void CampaignMode()
         {
-
+            LoadingScreen();
             Console.Clear();
             PrintGameName();
             Console.ForegroundColor = ConsoleColor.Green;
@@ -158,12 +193,19 @@ And finally, you step onto the grand runway, ready to show off your ultimate mas
                         Thread.Sleep(800);
                     }
                 }
-                catch
+                catch (FormatException) // Strictly for string input
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("Invalid input. Try again...");
+                    Console.WriteLine("You entered a word or invalid characters. Please type ONLY 1 or 2.");
                     Console.ResetColor();
-                    Thread.Sleep(800);
+                    Thread.Sleep(900);
+                }
+                catch (Exception) // Lahat Na ng exemption to 
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Invalid input. Please try again.");
+                    Console.ResetColor();
+                    Thread.Sleep(900);
                 }
             }
 
@@ -177,11 +219,11 @@ And finally, you step onto the grand runway, ready to show off your ultimate mas
         }
 
         //para di na paulet ulet mag print statement ng game name 
-        protected void PrintGameName()
+        protected  void PrintGameName()
         {
             PrintSeparator();
             Console.ForegroundColor = ConsoleColor.Magenta;
-            Console.WriteLine("=== Grand Style City! ===");
+            Console.WriteLine("============= Grand Style City! ==============");
             Console.ResetColor();
             PrintSeparator();
             Console.WriteLine("");
@@ -190,9 +232,19 @@ And finally, you step onto the grand runway, ready to show off your ultimate mas
         protected void PrintSeparator()
         {
             Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine("=========================");
+            Console.WriteLine("==============================================");
             Console.ResetColor();
         }
+        // eto na yung pinaka method overloading natin which is mag priprint ng
+        // multiple lines depende sa sinet natin numLines
+        protected void PrintSeparator(int numLines)
+        {
+            for (int i = 0; i < numLines; i++)
+            {
+                PrintSeparator();
+            }
+        }
+
 
         //para di rin paulet ulet looping ng lahat ng questions 
         protected byte PickOption(string title, string[] options)
@@ -208,15 +260,31 @@ And finally, you step onto the grand runway, ready to show off your ultimate mas
                     Console.WriteLine($"[{i + 1}] {options[i]}");
 
                 Console.Write("\nEnter choice: ");
+
+                string input = Console.ReadLine()!;
+
                 try
                 {
-                    byte choice = byte.Parse(Console.ReadLine()!);
+                    byte choice = byte.Parse(input);
+
                     if (choice >= 1 && choice <= options.Length)
                         return (byte)(choice - 1);
-                }
-                catch { }
 
-                Console.WriteLine("Invalid input. Press any key to retry.");
+                    // kapag sobrang taas nung input nya 
+                    Console.WriteLine("Pick only the options above.");
+                }
+                catch (FormatException)
+                {
+                    // Eto kapag string input
+                    Console.WriteLine("Invalid input. Please enter a number.");
+                }
+                catch (OverflowException)
+                {
+                    // kunware lagpas na sa byte yung input
+                    Console.WriteLine("Number is too large. Pick only the options above.");
+                }
+
+                Console.WriteLine("Press any key to retry.");
                 Console.ReadKey();
             }
         }
@@ -229,13 +297,29 @@ And finally, you step onto the grand runway, ready to show off your ultimate mas
                 Console.Clear();
                 PrintGameName();
                 Console.Write($"How many {itemName}? (0-{maxCount}): ");
+
+                string input = Console.ReadLine()!;
+
                 try
                 {
-                    byte count = byte.Parse(Console.ReadLine()!);
-                    if (count <= maxCount) return count;
+                    byte count = byte.Parse(input);
+
+                    // Number but out of range
+                    if (count <= maxCount)
+                        return count;
+
+                    Console.WriteLine($"Pick only within 0 to {maxCount}.");
                 }
-                catch { }
-                Console.WriteLine("Invalid input. Press any key to retry.");
+                catch (FormatException)
+                {
+                    Console.WriteLine("Invalid input. Please enter a number.");
+                }
+                catch (OverflowException)
+                {
+                    Console.WriteLine($"Number is too large. Pick only within 0 to {maxCount}.");
+                }
+
+                Console.WriteLine("Press any key to retry.");
                 Console.ReadKey();
             }
         }
@@ -264,6 +348,7 @@ And finally, you step onto the grand runway, ready to show off your ultimate mas
 
         protected PlayerClass LoadPlayer()
         {
+            LoadingScreen();
             if (!File.Exists(SaveFilePath))
             {
                 Console.WriteLine("No saved game found.");
@@ -275,6 +360,15 @@ And finally, you step onto the grand runway, ready to show off your ultimate mas
         }
 
         //eto isahang print statement na lang ng summary ng player
+        // here gumawa muna tayo ng label method para irefactor nalang yung code paulet ulet sa summary meaning
+        // cinacall lang natin yung method depende sa label na gagamitin
+        private void PrintLabelValue(string label, string value)
+        {
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Write($"{label}: ");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(value);
+        }
         protected void ShowPlayerSummary(PlayerClass p)
         {
             Console.Clear();
@@ -283,121 +377,59 @@ And finally, you step onto the grand runway, ready to show off your ultimate mas
             Console.WriteLine("=== CHARACTER SUMMARY ===\n");
             Console.ResetColor();
 
+            PrintLabelValue("Name", p.PlayerName);
+            PrintLabelValue("Gender", genderOptions[p.Gender]);
 
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine($"Name: ");
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine($"{p.PlayerName}");
-
-
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine($"Gender: ");
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine($"{genderOptions[p.Gender]}");
-            //print nalang to ah baka magtaka pa kayo 
-            // Hair with customization (eto na yung boolean na logic na ginawa nyo depende sa condition kung braided ba ang pinile lastly kung babae ba sya o hinde)
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.Write("Hair: ");
-            Console.ForegroundColor = ConsoleColor.White;
-
+            
             string hairStyleName;
-
-            if (p.Gender == 1) // Female
+            if (p.Gender == 1) 
             {
-                if (p.Hair == 2) // Braided
-                    hairStyleName = HairCustomizationBraided[p.HairCustomization];
-                else
-                    hairStyleName = HairCustomizationFemale[p.HairCustomization];
+                hairStyleName = (p.Hair == 2)
+                    ? HairCustomizationBraided[p.HairCustomization]
+                    : HairCustomizationFemale[p.HairCustomization];
             }
-            else // Male
+            else 
             {
-                if (p.Hair == 2) // Braided
-                    hairStyleName = HairCustomizationBraided[p.HairCustomization];
-                else
-                    hairStyleName = hairOptions[p.Hair]; // dinefault ko na yung sa male kung ano pinile nya kasi self explanatory naman
+                hairStyleName = (p.Hair == 2)
+                    ? HairCustomizationBraided[p.HairCustomization]
+                    : hairOptions[p.Hair];
             }
 
-            Console.WriteLine($"{hairStyleName} - {HairColors[p.HairColor]}");
+            PrintLabelValue("Hair", $"{hairStyleName} - {HairColors[p.HairColor]}");
 
-            // Face features
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine($"Face Shape: ");
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine($"{FaceShapes[p.FaceShape]}");
+            
+            PrintLabelValue("Face Shape", FaceShapes[p.FaceShape]);
+            PrintLabelValue("Nose Shape", NoseShapes[p.NoseShape]);
+            PrintLabelValue("Eye Color", EyeColors[p.EyeColor]);
+            PrintLabelValue("Skin Tone", SkinTones[p.SkinTone]);
+            PrintLabelValue("Body Type", BodyTypes[p.BodyType]);
 
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine($"Nose Shape: ");
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine($"{NoseShapes[p.NoseShape]}");
+            
+            PrintLabelValue("Top Attire", TopAttireOptions[p.TopAttire]);
 
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine($"Eye Color: ");
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine($"{EyeColors[p.EyeColor]}");
+            
+            PrintLabelValue("Earrings", string.Join(", ", p.EarringsList.Select(x => AccessoryEarrings[x])));
+            PrintLabelValue("Necklaces", string.Join(", ", p.NecklacesList.Select(x => AccessoryNecklaces[x])));
+            PrintLabelValue("Bracelets", string.Join(", ", p.BraceletsList.Select(x => AccessoryBracelets[x])));
+            PrintLabelValue("Rings", string.Join(", ", p.RingsList.Select(x => AccessoryRings[x])));
 
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine($"Skin Tone: ");
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine($"{SkinTones[p.SkinTone]}");
+            
+            PrintLabelValue("Shoes", $"{Shoes[p.Shoes]} - {ShoeColors[p.ShoeColor]}");
 
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine($"Body Type: ");
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine($"{BodyTypes[p.BodyType]}");
-
-            // Attire
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine($"Top Attire: ");
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine($"{TopAttireOptions[p.TopAttire]}");
-
-
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine("Accessories: ");
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine($"Earrings: {string.Join(", ", p.EarringsList.Select(x => AccessoryEarrings[x]))}");
-            Console.WriteLine($"Necklaces: {string.Join(", ", p.NecklacesList.Select(x => AccessoryNecklaces[x]))}");
-            Console.WriteLine($"Bracelets: {string.Join(", ", p.BraceletsList.Select(x => AccessoryBracelets[x]))}");
-            Console.WriteLine($"Rings: {string.Join(", ", p.RingsList.Select(x => AccessoryRings[x]))}");
-
-
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine($"Shoes: ");
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine($"{Shoes[p.Shoes]} - {ShoeColors[p.ShoeColor]}");
-
-
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine($"Pose: ");
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine($"{Poses[p.Pose]}");
-
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine($"Video Mode: ");
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine($"{VideoModes[p.VideoMode]}");
-
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine($"Background: ");
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine($"{Backgrounds[p.Background]}");
-
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine($"Pet: ");
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine($"{Pets[p.Pet]}");
-
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine($"Walk Animation: ");
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine($"{WalkAnimations[p.WalkAnimation]}");
-
+            
+            PrintLabelValue("Pose", Poses[p.Pose]);
+            PrintLabelValue("Video Mode", VideoModes[p.VideoMode]);
+            PrintLabelValue("Background", Backgrounds[p.Background]);
+            PrintLabelValue("Pet", Pets[p.Pet]);
+            PrintLabelValue("Walk Animation", WalkAnimations[p.WalkAnimation]);
 
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine($"\nSaved At: {p.SaveDate}");
             Console.ResetColor();
+
             PrintSeparator();
         }
+
 
         // syempre self explanatory na to :) ewan ko nalang pag dimo naintindihan to
         protected void AskReturnToMenu()

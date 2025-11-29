@@ -164,8 +164,8 @@ namespace ATMApp
             }
             else
             {
-                Console.WriteLine("Thank you for using our ATM");
-                
+                Console.WriteLine("Proceeding . . . "); Thread.Sleep(500);
+
             }
             Console.Write("Do you want to do another operation: ");
             choice = Console.ReadLine();
@@ -213,8 +213,7 @@ namespace ATMApp
             }
             else
             {
-                Console.WriteLine("Thank you for using our ATM");
-                
+                Console.WriteLine("Proceeding . . . "); Thread.Sleep(500);
             }
             Console.Write("Do you want Another operation: ");
             choice = Console.ReadLine();
