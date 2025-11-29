@@ -6,13 +6,14 @@ namespace GrandStyleCityWhole
     {
         static void Main(string[] args)
         {
-            // Tinawag lang natin yung DatabaseHelper para ma-initialize yung database at arrays
+            // instance nato pre para dun database na class
             DatabaseHelper.InitializeDatabase();
             DatabaseHelper.InitializeArrays();
 
-            //Encapsulation to pre
+           // see malinis yung flow malinis yung bato and clear yung main natin
             GrandStyleCityBaseClass game = new GrandStyleCityBaseClass();
             game.MainMenu();
+            // 16/05/25 Dagz Officially Done!
         }
     }
 }

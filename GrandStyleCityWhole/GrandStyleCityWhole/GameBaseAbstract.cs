@@ -1,12 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.Data.Sqlite; // Eto yung SQL import
 using System.Threading;
+
+// dito sa mga import pre wag kayo kabahan kaya marami yan kasi dahil sa .json file natin
+// lastly yung iba pang threading tas pang database yung system linq kaya meron non
+// para sa save file natin para babasahin yung format ng file sa index tas kapag ireretrieve nya ayun yung hahanap
+// basta ayan yung tinurong import ni maam recluta pre diko narin ma explain eh
 
 namespace GrandStyleCityWhole
 {
+    // Abstract class to tas tinatawag nya yung interface
+    // andito yung abstract tyaka virtual method pre 
     public abstract class GameBaseAbstract : GameInterface
     {
-        // method para sa loading screen 
+        // loadscreen to pre
         public void LoadingScreen()
         {
             Console.Clear();
@@ -33,11 +44,12 @@ namespace GrandStyleCityWhole
             }
 
             Console.ResetColor();
-            Console.WriteLine("\nFinnish loading\n Press Anything To Continue: "); Console.ReadKey();
+            Console.WriteLine("\nFinnish loading\n Press Anything To Continue: ");
+            Console.ReadKey();
             Console.Clear();
         }
 
-        // pre-loaded arrays (default values, same as DB)
+        // array options parin redundant pero kasi iniinitialize natin dito eh
         protected string[] gameModes = { "New Game", "Load Game", "Campaign Mode", "Credits", "Exit Game" };
         protected string[] genderOptions = { "Male", "Female" };
         protected string[] hairOptions = { "Curly", "Straight", "Braided", "Wavy" };
@@ -62,8 +74,16 @@ namespace GrandStyleCityWhole
         protected string[] Pets = { "Dogs", "Cats", "Hamster", "Bird" };
         protected string[] WalkAnimations = { "Classic runway walk", "Pose-and-walk" };
 
-        // print game name with separator
-        protected void PrintGameName()
+        // Setting colors na naka base sa index  
+        protected ConsoleColor[] questionColors = { ConsoleColor.Cyan, ConsoleColor.Magenta, ConsoleColor.DarkGreen };
+        protected ConsoleColor[] optionColors = { ConsoleColor.Yellow, ConsoleColor.DarkMagenta, ConsoleColor.DarkCyan,ConsoleColor.Red };
+        protected ConsoleColor errorColor = ConsoleColor.Red;
+        protected ConsoleColor inputColor = ConsoleColor.White;
+
+
+
+
+        public void PrintGameName()
         {
             PrintSeparator();
             Console.ForegroundColor = ConsoleColor.Magenta;
@@ -73,29 +93,32 @@ namespace GrandStyleCityWhole
             Console.WriteLine("");
         }
 
-        protected void PrintSeparator()
+        
+        public void PrintSeparator()
         {
             Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine("==============================================");
             Console.ResetColor();
         }
 
-        // method overloading to print multiple separators
+        // Method overloading to pre 
         protected void PrintSeparator(int numLines)
         {
             for (int i = 0; i < numLines; i++)
+            {
                 PrintSeparator();
+            }
         }
 
-        // constructor: ensure database initialized at startup
+        // Constructor nato man
         public GameBaseAbstract() => DatabaseHelper.InitializeDatabase();
 
-        // abstract methods to implement in derived class
+        
         public abstract void MainMenu();
         public abstract void NewGame();
         public abstract void LoadGame();
 
-        // optional modes
+        
         public virtual void CampaignMode()
         {
             LoadingScreen();
@@ -117,8 +140,10 @@ And finally, you step onto the grand runway, ready to show off your ultimate mas
             AskReturnToMenu();
         }
 
+        
         public virtual void Credits()
         {
+            LoadingScreen();
             Console.Clear();
             PrintGameName();
             Console.ForegroundColor = ConsoleColor.Green;
@@ -151,6 +176,7 @@ And finally, you step onto the grand runway, ready to show off your ultimate mas
             Console.ReadKey();
         }
 
+        
         public virtual void ExitGame()
         {
             while (true)
@@ -171,11 +197,11 @@ And finally, you step onto the grand runway, ready to show off your ultimate mas
                     if (choice == 1)
                     {
                         Credits();
-                        break; // exit loop and proceed to thank you message
+                        break;
                     }
                     else if (choice == 2)
                     {
-                        break; // skip credits, exit loop
+                        break;
                     }
                     else
                     {
@@ -185,14 +211,14 @@ And finally, you step onto the grand runway, ready to show off your ultimate mas
                         Thread.Sleep(800);
                     }
                 }
-                catch (FormatException) // Strictly for string input
+                catch (FormatException)
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine("You entered a word or invalid characters. Please type ONLY 1 or 2.");
                     Console.ResetColor();
                     Thread.Sleep(900);
                 }
-                catch (Exception) // Lahat Na ng exemption to 
+                catch (Exception)
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine("Invalid input. Please try again.");
@@ -210,79 +236,241 @@ And finally, you step onto the grand runway, ready to show off your ultimate mas
             Environment.Exit(0);
         }
 
-        // helper to pick single option from array
+
         protected byte PickOption(string title, string[] options)
         {
+            // Checking lang to para mag bato parin sya kahit null kasi automatic null tong mga to eh
+            if (options == null || options.Length == 0)
+                throw new ArgumentException("No options available for selection.", nameof(options));
+
             while (true)
             {
                 Console.Clear();
-                Console.WriteLine(title);
-                for (int i = 0; i < options.Length; i++)
-                    Console.WriteLine($"[{i + 1}] {options[i]}");
+                PrintGameName();
 
+                // Kuha ng question color gumamit tayo hashcode dito para consistent yung fetch ng color inde .index ginamit natin
+                // Ni loop kasi natin yung colors kaya if iindex natin mag ooverflow sya
+                Console.ForegroundColor = questionColors[Math.Abs(title.GetHashCode()) % questionColors.Length];
+                Console.WriteLine(title);
+                Console.ResetColor();
+
+                // eto dito natin niloop yung pag print ng text with colors
+                for (int i = 0; i < options.Length; i++)
+                {
+                    Console.ForegroundColor = optionColors[i % optionColors.Length];
+                    Console.WriteLine($"[{i + 1}] {options[i]}");
+                }
+                Console.ResetColor();
+
+                // kapag input white para unison
+                Console.ForegroundColor = inputColor;
                 Console.Write("Enter choice: ");
                 try
                 {
-                    byte choice = byte.Parse(Console.ReadLine()!);
-                    if (choice >= 1 && choice <= options.Length) return (byte)(choice - 1);
+                    // pag may question mark pre ternary yon basically if else na pinaikle
+                    // sa case nato (string) ba siya if oo readline if not parse mo yung input sa byte 
+                    // kaya ganto pas madali ibato yung excemption kasi mag eerror sya pag cinonvert mo sa byte text
+                    // thus lalabas talaga format exception 
+                    string? input = Console.ReadLine();
+                    if (string.IsNullOrWhiteSpace(input))
+                    {
+                        Console.ForegroundColor = errorColor;
+                        Console.WriteLine("Please enter a number.");
+                        Console.ReadKey();
+                        continue;
+                    }
+
+                    byte choice = byte.Parse(input);
+
+                    // kapag valid 
+                    if (choice >= 1 && choice <= options.Length)
+                        return (byte)(choice - 1);
+
+                    // automatic kapag sobrang taas like 10 or 100 basta pasok sa byte pero wala sa options
+                    // bat wala sya sa else kasi automatic na nirereturn sya gamit yung if sa taas pag di nag proceed yon
+                    // automatic eto yung lalabas
+                    Console.ForegroundColor = errorColor;
+                    Console.WriteLine("Pick only the options above.");
                 }
-                catch { }
+                catch (FormatException)
+                {
+                    // kapag string
+                    Console.ForegroundColor = errorColor;
+                    Console.WriteLine("Invalid input. Please enter a number.");
+                }
+                catch (OverflowException)
+                {
+                    // wala na sa byte range
+                    Console.ForegroundColor = errorColor;
+                    Console.WriteLine($"Number is too large. Pick only the options above.");
+                }
+
+                Console.ResetColor();
+                Console.WriteLine("Press any key to retry.");
+                Console.ReadKey();
             }
         }
-
-        // helper to pick a number
         protected byte PickCount(string itemName, byte maxCount)
         {
             while (true)
             {
+                Console.Clear();
+                PrintGameName();
+
+                
+                Console.ForegroundColor = questionColors[Math.Abs(itemName.GetHashCode()) % questionColors.Length];
                 Console.Write($"How many {itemName}? (0-{maxCount}): ");
+                Console.ForegroundColor = inputColor;
+
                 try
                 {
-                    byte count = byte.Parse(Console.ReadLine()!);
-                    if (count <= maxCount) return count;
+                    string? input = Console.ReadLine();
+                    if (string.IsNullOrWhiteSpace(input))
+                    {
+                        Console.ForegroundColor = errorColor;
+                        Console.WriteLine("Please enter a number.");
+                        Console.ReadKey();
+                        continue;
+                    }
+
+                    byte count = byte.Parse(input);
+                    if (count <= maxCount)
+                        return count;
+
+                    Console.ForegroundColor = errorColor;
+                    Console.WriteLine($"Pick only within 0 to {maxCount}.");
                 }
-                catch { }
+                catch (FormatException)
+                {
+                    
+                    Console.ForegroundColor = errorColor;
+                    Console.WriteLine("Invalid input. Please enter a number.");
+                }
+                catch (OverflowException)
+                {
+                    
+                    Console.ForegroundColor = errorColor;
+                    Console.WriteLine($"Number is too large. Pick only within 0 to {maxCount}.");
+                }
+
+                Console.ResetColor();
+                Console.WriteLine("Press any key to retry.");
+                Console.ReadKey();
             }
         }
 
-        // helper for picking multiple accessories
         protected List<byte> PickAccessoryMultiple(string title, string[] options, string itemName)
         {
+            
             byte count = PickCount(itemName, 10);
             List<byte> selections = new();
+
             for (int i = 0; i < count; i++)
             {
+                
                 byte pick = PickOption($"{title} ({i + 1} of {count})", options);
                 selections.Add(pick);
             }
+
             return selections;
         }
 
-        // helper to show a PlayerStruct
+
         protected void ShowPlayerSummary(PlayerStruct player)
         {
+            // eto pre kaya lang to mahaba papalit palit kasi color pero print option lang to wag kayo matakot
+            LoadingScreen();
             Console.Clear();
-            Console.WriteLine($"=== CHARACTER SUMMARY ===\nName: {player.PlayerName}");
-            Console.WriteLine($"Gender: {genderOptions[player.Gender]}");
-            Console.WriteLine($"Hair: {(player.Hair == 2 ? HairCustomizationBraided[player.HairCustomization] : hairOptions[player.Hair])} - {HairColors[player.HairColor]}");
-            Console.WriteLine($"Face Shape: {FaceShapes[player.FaceShape]}");
-            Console.WriteLine($"Nose Shape: {NoseShapes[player.NoseShape]}");
-            Console.WriteLine($"Eye Color: {EyeColors[player.EyeColor]}");
-            Console.WriteLine($"Skin Tone: {SkinTones[player.SkinTone]}");
-            Console.WriteLine($"Body Type: {BodyTypes[player.BodyType]}");
-            Console.WriteLine($"Top Attire: {TopAttireOptions[player.TopAttire]}");
-            Console.WriteLine($"Shoes: {Shoes[player.Shoes]} - {ShoeColors[player.ShoeColor]}");
-            Console.WriteLine($"Pose: {Poses[player.Pose]}");
-            Console.WriteLine($"Video Mode: {VideoModes[player.VideoMode]}");
-            Console.WriteLine($"Background: {Backgrounds[player.Background]}");
-            Console.WriteLine($"Pet: {Pets[player.Pet]}");
-            Console.WriteLine($"Walk Animation: {WalkAnimations[player.WalkAnimation]}");
-            Console.WriteLine($"Saved At: {player.SaveDate}");
+            PrintGameName();
+
+            Console.ForegroundColor = ConsoleColor.Magenta;
+            Console.WriteLine("=== CHARACTER SUMMARY ===");
+
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.Write("Name: ");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(player.PlayerName);
+
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.Write("Gender: ");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(genderOptions[player.Gender]);
+
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.Write("Hair: ");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine($"{(player.Hair == 2 ? HairCustomizationBraided[player.HairCustomization] : hairOptions[player.Hair])} - {HairColors[player.HairColor]}");
+
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.Write("Face Shape: ");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(FaceShapes[player.FaceShape]);
+
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.Write("Nose Shape: ");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(NoseShapes[player.NoseShape]);
+
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.Write("Eye Color: ");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(EyeColors[player.EyeColor]);
+
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.Write("Skin Tone: ");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(SkinTones[player.SkinTone]);
+
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.Write("Body Type: ");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(BodyTypes[player.BodyType]);
+
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.Write("Top Attire: ");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(TopAttireOptions[player.TopAttire]);
+
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.Write("Shoes: ");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine($"{Shoes[player.Shoes]} - {ShoeColors[player.ShoeColor]}");
+
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.Write("Pose: ");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(Poses[player.Pose]);
+
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.Write("Video Mode: ");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(VideoModes[player.VideoMode]);
+
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.Write("Background: ");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(Backgrounds[player.Background]);
+
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.Write("Pet: ");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(Pets[player.Pet]);
+
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.Write("Walk Animation: ");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(WalkAnimations[player.WalkAnimation]);
+
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.Write("Saved At: ");
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine(player.SaveDate);
+
+            Console.ResetColor();
             Console.WriteLine("\nPress any key to continue...");
             Console.ReadKey();
         }
 
-        // ask whether to go back to main menu or exit
         protected void AskReturnToMenu()
         {
             byte choice = PickOption("What do you want to do next?", new[] { "Main Menu", "Exit Game" });
