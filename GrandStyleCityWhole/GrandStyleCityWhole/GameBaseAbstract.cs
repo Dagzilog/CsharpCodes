@@ -40,7 +40,7 @@ namespace GrandStyleCityWhole
                 Console.Write("] ");
                 int percent = (i * 100) / totalBlocks;
                 Console.Write($"{percent}%");
-                Thread.Sleep(100);
+                Thread.Sleep(50);
             }
 
             Console.ResetColor();
@@ -467,6 +467,7 @@ And finally, you step onto the grand runway, ready to show off your ultimate mas
             Console.WriteLine(player.SaveDate);
 
             Console.ResetColor();
+            Thread.Sleep(1500);
             Console.WriteLine("\nPress any key to continue...");
             Console.ReadKey();
         }
