@@ -513,9 +513,11 @@ And finally, you step onto the grand runway, ready to show off your ultimate mas
 
                 Console.WriteLine();
             }
+            Thread.Sleep(5000);
 
-            Console.WriteLine("\nPress any key to return to Menu...");
+            Console.WriteLine("\nPress any key to continue...");
             Console.ReadKey();
+            AskReturnToMenu();
         }
 
     }

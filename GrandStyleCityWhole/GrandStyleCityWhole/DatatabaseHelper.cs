@@ -1,4 +1,5 @@
 ﻿    using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.IO;
 using Microsoft.Data.Sqlite;
@@ -10,12 +11,12 @@ namespace GrandStyleCityWhole
         // etong method nato iniinitialize na natin yung mga array table sa DATABASE
         public static List<(string TableName, List<string> Rows)> GetAllTablesAndRows()
         {
-            List<(string, List<string>)> result = new();
+            List<(string TableName, List<string> Rows)> result = new();
 
             using var conn = GetConnection();
             conn.Open();
 
-            // Get all table names
+            // tatawagin mga tables
             using (var cmd = conn.CreateCommand())
             {
                 cmd.CommandText = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;";
@@ -28,11 +29,13 @@ namespace GrandStyleCityWhole
                 }
             }
 
-            // Get rows for each table
-            foreach (var t in result)
+            // tatawagin mga rows
+            for (int i = 0; i < result.Count; i++)
             {
+                var (tableName, rows) = result[i];
+
                 using var cmd = conn.CreateCommand();
-                cmd.CommandText = $"SELECT * FROM {t.TableName};";
+                cmd.CommandText = $"SELECT * FROM {tableName};";
 
                 using var reader = cmd.ExecuteReader();
                 int fieldCount = reader.FieldCount;
@@ -40,15 +43,19 @@ namespace GrandStyleCityWhole
                 while (reader.Read())
                 {
                     List<string> row = new();
-                    for (int i = 0; i < fieldCount; i++)
-                        row.Add($"{reader.GetName(i)}={reader.GetValue(i)}");
+                    for (int f = 0; f < fieldCount; f++)
+                        row.Add($"{reader.GetName(f)}={reader.GetValue(f)}");
 
-                    t.Rows.Add(string.Join(", ", row));
+                    rows.Add(string.Join(", ", row));
                 }
+
+                // re-assign modified tuple back into list
+                result[i] = (tableName, rows);
             }
 
             return result;
         }
+
 
         public static void InitializeArrays()
         {
