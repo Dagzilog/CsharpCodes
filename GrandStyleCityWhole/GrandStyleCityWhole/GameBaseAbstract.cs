@@ -50,7 +50,7 @@ namespace GrandStyleCityWhole
         }
 
         // array options parin redundant pero kasi iniinitialize natin dito eh
-        protected string[] gameModes = { "New Game", "Load Game", "Campaign Mode", "Credits", "Exit Game" };
+        protected string[] gameModes = { "New Game", "Load Game", "Campaign Mode", "Credits", "Exit Game", "Show database Tables" };
         protected string[] genderOptions = { "Male", "Female" };
         protected string[] hairOptions = { "Curly", "Straight", "Braided", "Wavy" };
         protected string[] HairColors = { "Blonde", "Black", "Red", "Orange", "Ash Gray" };
@@ -76,7 +76,7 @@ namespace GrandStyleCityWhole
 
         // Setting colors na naka base sa index  
         protected ConsoleColor[] questionColors = { ConsoleColor.Cyan, ConsoleColor.Magenta, ConsoleColor.DarkGreen };
-        protected ConsoleColor[] optionColors = { ConsoleColor.Yellow, ConsoleColor.DarkMagenta, ConsoleColor.DarkCyan,ConsoleColor.Red };
+        protected ConsoleColor[] optionColors = { ConsoleColor.Yellow, ConsoleColor.DarkMagenta, ConsoleColor.DarkCyan, ConsoleColor.Red };
         protected ConsoleColor errorColor = ConsoleColor.Red;
         protected ConsoleColor inputColor = ConsoleColor.White;
 
@@ -93,7 +93,7 @@ namespace GrandStyleCityWhole
             Console.WriteLine("");
         }
 
-        
+
         public void PrintSeparator()
         {
             Console.ForegroundColor = ConsoleColor.Yellow;
@@ -113,12 +113,12 @@ namespace GrandStyleCityWhole
         // Constructor nato man
         public GameBaseAbstract() => DatabaseHelper.InitializeDatabase();
 
-        
+
         public abstract void MainMenu();
         public abstract void NewGame();
         public abstract void LoadGame();
 
-        
+
         public virtual void CampaignMode()
         {
             LoadingScreen();
@@ -140,7 +140,7 @@ And finally, you step onto the grand runway, ready to show off your ultimate mas
             AskReturnToMenu();
         }
 
-        
+
         public virtual void Credits()
         {
             LoadingScreen();
@@ -176,7 +176,7 @@ And finally, you step onto the grand runway, ready to show off your ultimate mas
             Console.ReadKey();
         }
 
-        
+
         public virtual void ExitGame()
         {
             while (true)
@@ -317,7 +317,7 @@ And finally, you step onto the grand runway, ready to show off your ultimate mas
                 Console.Clear();
                 PrintGameName();
 
-                
+
                 Console.ForegroundColor = questionColors[Math.Abs(itemName.GetHashCode()) % questionColors.Length];
                 Console.Write($"How many {itemName}? (0-{maxCount}): ");
                 Console.ForegroundColor = inputColor;
@@ -342,13 +342,13 @@ And finally, you step onto the grand runway, ready to show off your ultimate mas
                 }
                 catch (FormatException)
                 {
-                    
+
                     Console.ForegroundColor = errorColor;
                     Console.WriteLine("Invalid input. Please enter a number.");
                 }
                 catch (OverflowException)
                 {
-                    
+
                     Console.ForegroundColor = errorColor;
                     Console.WriteLine($"Number is too large. Pick only within 0 to {maxCount}.");
                 }
@@ -361,13 +361,13 @@ And finally, you step onto the grand runway, ready to show off your ultimate mas
 
         protected List<byte> PickAccessoryMultiple(string title, string[] options, string itemName)
         {
-            
+
             byte count = PickCount(itemName, 10);
             List<byte> selections = new();
 
             for (int i = 0; i < count; i++)
             {
-                
+
                 byte pick = PickOption($"{title} ({i + 1} of {count})", options);
                 selections.Add(pick);
             }
@@ -478,5 +478,46 @@ And finally, you step onto the grand runway, ready to show off your ultimate mas
             if (choice == 0) MainMenu();
             else ExitGame();
         }
+        public void ShowAllDatabaseTables()
+        {
+            LoadingScreen();
+            Console.Clear();
+            PrintGameName();
+
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("=== ALL DATABASE TABLES ===\n");
+            Console.ResetColor();
+
+            var tables = DatabaseHelper.GetAllTablesAndRows();
+
+            foreach (var (TableName, Rows) in tables)
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine($"--- {TableName} ---");
+                Console.ResetColor();
+
+                if (Rows.Count == 0)
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkRed;
+                    Console.WriteLine("(EMPTY)");
+                    Console.ResetColor();
+                }
+                else
+                {
+                    foreach (var row in Rows)
+                    {
+                        Console.ForegroundColor = ConsoleColor.White;
+                        Console.WriteLine(row);
+                    }
+                }
+
+                Console.WriteLine();
+            }
+
+            Console.WriteLine("\nPress any key to return to Menu...");
+            Console.ReadKey();
+        }
+
     }
 }
+

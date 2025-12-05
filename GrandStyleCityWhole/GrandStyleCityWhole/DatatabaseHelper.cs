@@ -1,4 +1,4 @@
-﻿using System;
+﻿    using System;
 using System.Collections.Generic;
 using System.IO;
 using Microsoft.Data.Sqlite;
@@ -8,6 +8,48 @@ namespace GrandStyleCityWhole
     public static class DatabaseHelper
     {
         // etong method nato iniinitialize na natin yung mga array table sa DATABASE
+        public static List<(string TableName, List<string> Rows)> GetAllTablesAndRows()
+        {
+            List<(string, List<string>)> result = new();
+
+            using var conn = GetConnection();
+            conn.Open();
+
+            // Get all table names
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;";
+                using var reader = cmd.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    string tableName = reader.GetString(0);
+                    result.Add((tableName, new List<string>()));
+                }
+            }
+
+            // Get rows for each table
+            foreach (var t in result)
+            {
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = $"SELECT * FROM {t.TableName};";
+
+                using var reader = cmd.ExecuteReader();
+                int fieldCount = reader.FieldCount;
+
+                while (reader.Read())
+                {
+                    List<string> row = new();
+                    for (int i = 0; i < fieldCount; i++)
+                        row.Add($"{reader.GetName(i)}={reader.GetValue(i)}");
+
+                    t.Rows.Add(string.Join(", ", row));
+                }
+            }
+
+            return result;
+        }
+
         public static void InitializeArrays()
         {
             using var conn = GetConnection();

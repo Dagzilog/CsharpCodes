@@ -32,6 +32,7 @@ namespace GrandStyleCityWhole
                         case 2: CampaignMode(); break;
                         case 3: Credits(); break;
                         case 4: ExitGame(); break;
+                        case 5: ShowAllDatabaseTables(); break;
                     }
                 }
                 catch
