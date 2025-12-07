@@ -1,186 +1,189 @@
-﻿    using System;
-using System.CodeDom;
+﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using Microsoft.Data.Sqlite;
 
 namespace GrandStyleCityWhole
 {
     public static class DatabaseHelper
     {
-        // etong method nato iniinitialize na natin yung mga array table sa DATABASE
-        public static List<(string TableName, List<string> Rows)> GetAllTablesAndRows()
-        {
-            List<(string TableName, List<string> Rows)> result = new();
+        private const string DbFile = "GrandStyleCityDBSecondEdition.db";
 
+        public static SqliteConnection GetConnection() => new SqliteConnection($"Data Source={DbFile}");
+
+        public static void InitializeDatabase()
+        {
             using var conn = GetConnection();
             conn.Open();
-
-            // tatawagin mga tables
-            using (var cmd = conn.CreateCommand())
-            {
-                cmd.CommandText = "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;";
-                using var reader = cmd.ExecuteReader();
-
-                while (reader.Read())
-                {
-                    string tableName = reader.GetString(0);
-                    result.Add((tableName, new List<string>()));
-                }
-            }
-
-            // tatawagin mga rows
-            for (int i = 0; i < result.Count; i++)
-            {
-                var (tableName, rows) = result[i];
-
-                using var cmd = conn.CreateCommand();
-                cmd.CommandText = $"SELECT * FROM {tableName};";
-
-                using var reader = cmd.ExecuteReader();
-                int fieldCount = reader.FieldCount;
-
-                while (reader.Read())
-                {
-                    List<string> row = new();
-                    for (int f = 0; f < fieldCount; f++)
-                        row.Add($"{reader.GetName(f)}={reader.GetValue(f)}");
-
-                    rows.Add(string.Join(", ", row));
-                }
-
-                // re-assign modified tuple back into list
-                result[i] = (tableName, rows);
-            }
-
-            return result;
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+                CREATE TABLE IF NOT EXISTS Players(
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    PlayerName TEXT,
+                    SaveDate TEXT DEFAULT CURRENT_TIMESTAMP
+                );
+                CREATE TABLE IF NOT EXISTS Options(
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Category TEXT,
+                    Name TEXT
+                );
+                CREATE TABLE IF NOT EXISTS PlayerOptions(
+                    PlayerId INTEGER,
+                    OptionId INTEGER,
+                    FOREIGN KEY(PlayerId) REFERENCES Players(Id),
+                    FOREIGN KEY(OptionId) REFERENCES Options(Id)
+                );";
+            cmd.ExecuteNonQuery();
         }
 
-
-        public static void InitializeArrays()
+        public static void InitializeOptions(Dictionary<string, string[]> options)
         {
             using var conn = GetConnection();
             conn.Open();
-
-            void InsertArray(string tableName, string[] array)
+            foreach (var cat in options)
             {
-                using var cmd = conn.CreateCommand();
-                cmd.CommandText = $"SELECT COUNT(*) FROM {tableName}";
-                long count = (long)cmd.ExecuteScalar()!;
-                if (count > 0) return; // may lamaan na so rereturn nya nalang sa tale (error prone to kasi pabalik balik sya if full na)
-
-                foreach (var item in array)
+                foreach (var opt in cat.Value)
                 {
-                    cmd.CommandText = $"INSERT INTO {tableName} (Name) VALUES (@name)";
-                    cmd.Parameters.Clear();
-                    cmd.Parameters.AddWithValue("@name", item);
+                    using var cmd = conn.CreateCommand();
+                    cmd.CommandText = "INSERT INTO Options(Category, Name) VALUES(@cat, @name)";
+                    cmd.Parameters.AddWithValue("@cat", cat.Key);
+                    cmd.Parameters.AddWithValue("@name", opt);
                     cmd.ExecuteNonQuery();
                 }
             }
-
-            //  eto yung insert pre sa module natin pero insertArray satin kasi syempre naka array tayo
-            InsertArray("GameModes", new string[] { "New Game", "Load Game", "Campaign Mode", "Credits", "Exit Game" });
-            InsertArray("GenderOptions", new string[] { "Male", "Female" });
-            InsertArray("HairOptions", new string[] { "Curly", "Straight", "Braided", "Wavy" });
-            InsertArray("HairColors", new string[] { "Blonde", "Black", "Red", "Orange", "Ash Gray" });
-            InsertArray("HairCustomizationBraided", new string[] { "Cornrows", "Twist", "Dreadlocks" });
-            InsertArray("HairCustomizationFemale", new string[] { "Ponytail", "Regular" });
-            InsertArray("FaceShapes", new string[] { "Oval", "Rectangular", "Heart", "Diamond" });
-            InsertArray("NoseShapes", new string[] { "Rounded", "Pointed", "Upturned", "Downturned" });
-            InsertArray("EyeColors", new string[] { "Black", "Brown", "Blue" });
-            InsertArray("SkinTones", new string[] { "Dark", "Pale", "Fair" });
-            InsertArray("BodyTypes", new string[] { "Slim", "Muscular", "Chubby" });
-            InsertArray("TopAttireOptions", new string[] { "School uniform", "Gown", "Street wear", "Formal wear", "Swim suit" });
-            InsertArray("AccessoryEarrings", new string[] { "Stud", "Hoop", "Dangle" });
-            InsertArray("AccessoryNecklaces", new string[] { "Bead", "Tennis", "Pearl" });
-            InsertArray("AccessoryBracelets", new string[] { "Chain", "Tennis", "Pearl" });
-            InsertArray("AccessoryRings", new string[] { "Band", "Stackable", "Solitaire" });
-            InsertArray("Shoes", new string[] { "Sneakers", "Boots", "Sandals" });
-            InsertArray("ShoeColors", new string[] { "Red", "Black", "White" });
-            InsertArray("Poses", new string[] { "Leaning", "Hand-on-waist", "Cross arm" });
-            InsertArray("VideoModes", new string[] { "Slow motion", "Close up", "Hybrid" });
-            InsertArray("Backgrounds", new string[] { "Garden", "Beach", "Runway", "City" });
-            InsertArray("Pets", new string[] { "Dogs", "Cats", "Hamster", "Bird" });
-            InsertArray("WalkAnimations", new string[] { "Classic runway walk", "Pose-and-walk" });
-
-            conn.Close();
         }
 
-        public static string DbFile = "GrandStyleCityDB.sqlite";
-
-        public static SqliteConnection GetConnection()
+        public static List<(int Id, string Name)> GetOptionsByCategory(string category)
         {
-            return new SqliteConnection($"Data Source={DbFile}");
+            var list = new List<(int, string)>();
+            using var conn = GetConnection();
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT Id, Name FROM Options WHERE Category=@cat";
+            cmd.Parameters.AddWithValue("@cat", category);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                list.Add((reader.GetInt32(0), reader.GetString(1)));
+            return list;
         }
 
-        // eto is logic lang para kung walang table mag crecreate sya ng table para satin kusa 
-        public static void InitializeDatabase()
+        public static string GetOptionNameById(int? id)
         {
-            if (!File.Exists(DbFile))
+            if (!id.HasValue) return "None";
+            using var conn = GetConnection();
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT Name FROM Options WHERE Id=@id";
+            cmd.Parameters.AddWithValue("@id", id.Value);
+            return cmd.ExecuteScalar()?.ToString() ?? "Unknown";
+        }
+
+        public static long InsertPlayer(PlayerStruct player)
+        {
+            using var conn = GetConnection();
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "INSERT INTO Players(PlayerName) VALUES(@name)";
+            cmd.Parameters.AddWithValue("@name", player.PlayerName);
+            cmd.ExecuteNonQuery();
+
+            long id;
+            using (var cmd2 = conn.CreateCommand())
             {
-                // kapag walang file na DB sa device gagawa sya
-                // meaning refactorable tong code nato kung irurun natin sya sa ibat ibang device
-                using (File.Create(DbFile)) { }
+                cmd2.CommandText = "SELECT last_insert_rowid()";
+                id = (long)cmd2.ExecuteScalar();
             }
 
+            foreach (var kvp in player.SingleOptions)
+            {
+                if (kvp.Value.HasValue)
+                {
+                    using var cmd2 = conn.CreateCommand();
+                    cmd2.CommandText = "INSERT INTO PlayerOptions(PlayerId, OptionId) VALUES(@pid, @oid)";
+                    cmd2.Parameters.AddWithValue("@pid", id);
+                    cmd2.Parameters.AddWithValue("@oid", kvp.Value.Value);
+                    cmd2.ExecuteNonQuery();
+                }
+            }
+
+            foreach (var (usage, optId) in player.MultipleOptions)
+            {
+                using var cmd2 = conn.CreateCommand();
+                cmd2.CommandText = "INSERT INTO PlayerOptions(PlayerId, OptionId) VALUES(@pid, @oid)";
+                cmd2.Parameters.AddWithValue("@pid", id);
+                cmd2.Parameters.AddWithValue("@oid", optId);
+                cmd2.ExecuteNonQuery();
+            }
+
+            return id;
+        }
+
+        public static List<(int Id, string Name, string SaveDate)> GetSavedGames()
+        {
+            var list = new List<(int, string, string)>();
+            using var conn = GetConnection();
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT Id, PlayerName, SaveDate FROM Players ORDER BY Id";
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+                list.Add((reader.GetInt32(0), reader.GetString(1), reader.GetString(2)));
+            return list;
+        }
+
+        public static (Dictionary<string, int?> singleOptions, List<(string usage, int optionId)> multipleOptions, string playerName, string saveDate) GetPlayerWithOptions(int playerId)
+        {
+            var singleOptions = new Dictionary<string, int?>();
+            var multipleOptions = new List<(string usage, int optionId)>();
             using var conn = GetConnection();
             conn.Open();
 
             using var cmd = conn.CreateCommand();
-            cmd.CommandText = @"
-                CREATE TABLE IF NOT EXISTS GameModes (Id INTEGER PRIMARY KEY, Name TEXT);
-                CREATE TABLE IF NOT EXISTS GenderOptions (Id INTEGER PRIMARY KEY, Name TEXT);
-                CREATE TABLE IF NOT EXISTS HairOptions (Id INTEGER PRIMARY KEY, Name TEXT);
-                CREATE TABLE IF NOT EXISTS HairColors (Id INTEGER PRIMARY KEY, Name TEXT);
-                CREATE TABLE IF NOT EXISTS HairCustomizationBraided (Id INTEGER PRIMARY KEY, Name TEXT);
-                CREATE TABLE IF NOT EXISTS HairCustomizationFemale (Id INTEGER PRIMARY KEY, Name TEXT);
-                CREATE TABLE IF NOT EXISTS FaceShapes (Id INTEGER PRIMARY KEY, Name TEXT);
-                CREATE TABLE IF NOT EXISTS NoseShapes (Id INTEGER PRIMARY KEY, Name TEXT);
-                CREATE TABLE IF NOT EXISTS EyeColors (Id INTEGER PRIMARY KEY, Name TEXT);
-                CREATE TABLE IF NOT EXISTS SkinTones (Id INTEGER PRIMARY KEY, Name TEXT);
-                CREATE TABLE IF NOT EXISTS BodyTypes (Id INTEGER PRIMARY KEY, Name TEXT);
-                CREATE TABLE IF NOT EXISTS TopAttireOptions (Id INTEGER PRIMARY KEY, Name TEXT);
-                CREATE TABLE IF NOT EXISTS AccessoryEarrings (Id INTEGER PRIMARY KEY, Name TEXT);
-                CREATE TABLE IF NOT EXISTS AccessoryNecklaces (Id INTEGER PRIMARY KEY, Name TEXT);
-                CREATE TABLE IF NOT EXISTS AccessoryBracelets (Id INTEGER PRIMARY KEY, Name TEXT);
-                CREATE TABLE IF NOT EXISTS AccessoryRings (Id INTEGER PRIMARY KEY, Name TEXT);
-                CREATE TABLE IF NOT EXISTS Shoes (Id INTEGER PRIMARY KEY, Name TEXT);
-                CREATE TABLE IF NOT EXISTS ShoeColors (Id INTEGER PRIMARY KEY, Name TEXT);
-                CREATE TABLE IF NOT EXISTS Poses (Id INTEGER PRIMARY KEY, Name TEXT);
-                CREATE TABLE IF NOT EXISTS VideoModes (Id INTEGER PRIMARY KEY, Name TEXT);
-                CREATE TABLE IF NOT EXISTS Backgrounds (Id INTEGER PRIMARY KEY, Name TEXT);
-                CREATE TABLE IF NOT EXISTS Pets (Id INTEGER PRIMARY KEY, Name TEXT);
-                CREATE TABLE IF NOT EXISTS WalkAnimations (Id INTEGER PRIMARY KEY, Name TEXT);
-                CREATE TABLE IF NOT EXISTS Players (
-                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    PlayerName TEXT NOT NULL,
-                    Gender INTEGER,
-                    Hair INTEGER,
-                    HairCustomization INTEGER,
-                    HairColor INTEGER,
-                    FaceShape INTEGER,
-                    NoseShape INTEGER,
-                    EyeColor INTEGER,
-                    SkinTone INTEGER,
-                    BodyType INTEGER,
-                    TopAttire INTEGER,
-                    Shoes INTEGER,
-                    ShoeColor INTEGER,
-                    Pose INTEGER,
-                    VideoMode INTEGER,
-                    Background INTEGER,
-                    Pet INTEGER,
-                    WalkAnimation INTEGER,
-                    SaveDate TEXT
-                );
-                CREATE TABLE IF NOT EXISTS PlayerAccessories (
-                    PlayerId INTEGER,
-                    AccessoryType TEXT,
-                    OptionId INTEGER
-                );
-            ";
+            cmd.CommandText = "SELECT PlayerName, SaveDate FROM Players WHERE Id=@id";
+            cmd.Parameters.AddWithValue("@id", playerId);
+            using var reader = cmd.ExecuteReader();
+            reader.Read();
+            string name = reader.GetString(0);
+            string date = reader.GetString(1);
+            reader.Close();
+
+            // get all options
+            using var cmd2 = conn.CreateCommand();
+            cmd2.CommandText = @"SELECT o.Category, o.Id FROM Options o
+                                 JOIN PlayerOptions po ON o.Id = po.OptionId
+                                 WHERE po.PlayerId=@pid";
+            cmd2.Parameters.AddWithValue("@pid", playerId);
+            using var r2 = cmd2.ExecuteReader();
+            while (r2.Read())
+            {
+                string cat = r2.GetString(0);
+                int oid = r2.GetInt32(1);
+                // categorize into single/multiple
+                if (singleOptions.ContainsKey(cat))
+                {
+                    multipleOptions.Add((cat, oid));
+                }
+                else
+                {
+                    singleOptions[cat] = oid;
+                }
+            }
+
+            return (singleOptions, multipleOptions, name, date);
+        }
+
+        public static void DeletePlayer(int playerId)
+        {
+            using var conn = GetConnection();
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "DELETE FROM PlayerOptions WHERE PlayerId=@pid";
+            cmd.Parameters.AddWithValue("@pid", playerId);
             cmd.ExecuteNonQuery();
-            conn.Close();
+
+            using var cmd2 = conn.CreateCommand();
+            cmd2.CommandText = "DELETE FROM Players WHERE Id=@pid";
+            cmd2.Parameters.AddWithValue("@pid", playerId);
+            cmd2.ExecuteNonQuery();
         }
     }
 }
