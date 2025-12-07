@@ -1,189 +1,215 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using Microsoft.Data.Sqlite;
+using System.Linq;
 
 namespace GrandStyleCityWhole
 {
     public static class DatabaseHelper
     {
-        private const string DbFile = "GrandStyleCityDBSecondEdition.db";
+        // Using the latest file name from the user's snippet
+        public static string DbFile = "GrandStlyeCitySecondEditionDatabase.DB";
 
-        public static SqliteConnection GetConnection() => new SqliteConnection($"Data Source={DbFile}");
+        public static SqliteConnection GetConnection()
+        {
+            return new SqliteConnection($"Data Source={DbFile}");
+        }
 
         public static void InitializeDatabase()
         {
+            if (!File.Exists(DbFile))
+            {
+                // Create the file if it doesn't exist.
+                using (File.Create(DbFile)) { }
+            }
+
             using var conn = GetConnection();
             conn.Open();
+
             using var cmd = conn.CreateCommand();
             cmd.CommandText = @"
-                CREATE TABLE IF NOT EXISTS Players(
+                PRAGMA foreign_keys = ON;
+                
+                CREATE TABLE IF NOT EXISTS Options (
                     Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    PlayerName TEXT,
-                    SaveDate TEXT DEFAULT CURRENT_TIMESTAMP
+                    Type TEXT NOT NULL,
+                    Name TEXT NOT NULL,
+                    UNIQUE(Type, Name)
                 );
-                CREATE TABLE IF NOT EXISTS Options(
+
+                CREATE TABLE IF NOT EXISTS Players (
                     Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    Category TEXT,
-                    Name TEXT
+                    PlayerName TEXT NOT NULL,
+                    GenderId INTEGER,
+                    HairId INTEGER,
+                    HairCustomizationId INTEGER,
+                    HairColorId INTEGER,
+                    FaceShapeId INTEGER,
+                    NoseShapeId INTEGER,
+                    EyeColorId INTEGER,
+                    SkinToneId INTEGER,
+                    BodyTypeId INTEGER,
+                    TopAttireId INTEGER,
+                    ShoesId INTEGER,
+                    ShoeColorId INTEGER,
+                    PoseId INTEGER,
+                    VideoModeId INTEGER,
+                    BackgroundId INTEGER,
+                    PetId INTEGER,
+                    WalkAnimationId INTEGER,
+                    SaveDate TEXT,
+                    
+                    FOREIGN KEY(GenderId) REFERENCES Options(Id),
+                    FOREIGN KEY(HairId) REFERENCES Options(Id),
+                    FOREIGN KEY(HairCustomizationId) REFERENCES Options(Id),
+                    FOREIGN KEY(HairColorId) REFERENCES Options(Id),
+                    FOREIGN KEY(FaceShapeId) REFERENCES Options(Id),
+                    FOREIGN KEY(NoseShapeId) REFERENCES Options(Id),
+                    FOREIGN KEY(EyeColorId) REFERENCES Options(Id),
+                    FOREIGN KEY(SkinToneId) REFERENCES Options(Id),
+                    FOREIGN KEY(BodyTypeId) REFERENCES Options(Id),
+                    FOREIGN KEY(TopAttireId) REFERENCES Options(Id),
+                    FOREIGN KEY(ShoesId) REFERENCES Options(Id),
+                    FOREIGN KEY(ShoeColorId) REFERENCES Options(Id),
+                    FOREIGN KEY(PoseId) REFERENCES Options(Id),
+                    FOREIGN KEY(VideoModeId) REFERENCES Options(Id),
+                    FOREIGN KEY(BackgroundId) REFERENCES Options(Id),
+                    FOREIGN KEY(PetId) REFERENCES Options(Id),
+                    FOREIGN KEY(WalkAnimationId) REFERENCES Options(Id)
                 );
-                CREATE TABLE IF NOT EXISTS PlayerOptions(
+                
+                -- This table links players to multiple accessories options
+                CREATE TABLE IF NOT EXISTS PlayerAccessories (
                     PlayerId INTEGER,
-                    OptionId INTEGER,
-                    FOREIGN KEY(PlayerId) REFERENCES Players(Id),
+                    AccessoryType TEXT,
+                    OptionId INTEGER,   -- Reference to the Options table Id
+                    PRIMARY KEY(PlayerId, AccessoryType, OptionId),
+                    FOREIGN KEY(PlayerId) REFERENCES Players(Id) ON DELETE CASCADE,
                     FOREIGN KEY(OptionId) REFERENCES Options(Id)
-                );";
+                );
+            ";
             cmd.ExecuteNonQuery();
+            conn.Close();
         }
 
-        public static void InitializeOptions(Dictionary<string, string[]> options)
+        public static void InitializeArrays()
         {
             using var conn = GetConnection();
             conn.Open();
-            foreach (var cat in options)
+
+            void InsertArray(string typeName, string[] array)
             {
-                foreach (var opt in cat.Value)
+                using var cmd = conn.CreateCommand();
+                // Check if any items of this Type already exist
+                cmd.CommandText = $"SELECT COUNT(*) FROM Options WHERE Type = @typeName";
+                cmd.Parameters.AddWithValue("@typeName", typeName);
+                long count = (long)cmd.ExecuteScalar()!;
+                if (count > 0) return;
+
+                foreach (var item in array)
                 {
-                    using var cmd = conn.CreateCommand();
-                    cmd.CommandText = "INSERT INTO Options(Category, Name) VALUES(@cat, @name)";
-                    cmd.Parameters.AddWithValue("@cat", cat.Key);
-                    cmd.Parameters.AddWithValue("@name", opt);
+                    cmd.CommandText = "INSERT INTO Options (Type, Name) VALUES (@type, @name)";
+                    cmd.Parameters.Clear();
+                    cmd.Parameters.AddWithValue("@type", typeName);
+                    cmd.Parameters.AddWithValue("@name", item);
                     cmd.ExecuteNonQuery();
                 }
             }
+
+            // All original arrays are now inserted into the single 'Options' table with a 'Type' column
+            InsertArray("GameModes", new string[] { "New Game", "Load Game", "Campaign Mode", "Credits", "Exit Game", "Show database Tables" });
+            InsertArray("GenderOptions", new string[] { "Male", "Female" });
+            InsertArray("HairOptions", new string[] { "Curly", "Straight", "Braided", "Wavy" });
+            InsertArray("HairColors", new string[] { "Blonde", "Black", "Red", "Orange", "Ash Gray" });
+            InsertArray("HairCustomizationBraided", new string[] { "Cornrows", "Twist", "Dreadlocks" });
+            InsertArray("HairCustomizationFemale", new string[] { "Ponytail", "Regular" });
+            InsertArray("FaceShapes", new string[] { "Oval", "Rectangular", "Heart", "Diamond" });
+            InsertArray("NoseShapes", new string[] { "Rounded", "Pointed", "Upturned", "Downturned" });
+            InsertArray("EyeColors", new string[] { "Black", "Brown", "Blue" });
+            InsertArray("SkinTones", new string[] { "Dark", "Pale", "Fair" });
+            InsertArray("BodyTypes", new string[] { "Slim", "Muscular", "Chubby" });
+            InsertArray("TopAttireOptions", new string[] { "School uniform", "Gown", "Street wear", "Formal wear", "Swim suit" });
+            InsertArray("AccessoryEarrings", new string[] { "Stud", "Hoop", "Dangle" });
+            InsertArray("AccessoryNecklaces", new string[] { "Bead", "Tennis", "Pearl" });
+            InsertArray("AccessoryBracelets", new string[] { "Chain", "Tennis", "Pearl" });
+            InsertArray("AccessoryRings", new string[] { "Band", "Stackable", "Solitaire" });
+            InsertArray("Shoes", new string[] { "Sneakers", "Boots", "Sandals" });
+            InsertArray("ShoeColors", new string[] { "Red", "Black", "White" });
+            InsertArray("Poses", new string[] { "Leaning", "Hand-on-waist", "Cross arm" });
+            InsertArray("VideoModes", new string[] { "Slow motion", "Close up", "Hybrid" });
+            InsertArray("Backgrounds", new string[] { "Garden", "Beach", "Runway", "City" });
+            InsertArray("Pets", new string[] { "Dogs", "Cats", "Hamster", "Bird" });
+            InsertArray("WalkAnimations", new string[] { "Classic runway walk", "Pose-and-walk" });
+
+            conn.Close();
         }
 
-        public static List<(int Id, string Name)> GetOptionsByCategory(string category)
+        // New method to fetch all options for a given Type. Returns list of (Id, Name)
+        public static List<(int Id, string Name)> GetOptionsByType(string typeName)
         {
-            var list = new List<(int, string)>();
+            var options = new List<(int Id, string Name)>();
             using var conn = GetConnection();
             conn.Open();
+
             using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT Id, Name FROM Options WHERE Category=@cat";
-            cmd.Parameters.AddWithValue("@cat", category);
+            cmd.CommandText = "SELECT Id, Name FROM Options WHERE Type = @type ORDER BY Id";
+            cmd.Parameters.AddWithValue("@type", typeName);
+
             using var reader = cmd.ExecuteReader();
             while (reader.Read())
-                list.Add((reader.GetInt32(0), reader.GetString(1)));
-            return list;
-        }
-
-        public static string GetOptionNameById(int? id)
-        {
-            if (!id.HasValue) return "None";
-            using var conn = GetConnection();
-            conn.Open();
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT Name FROM Options WHERE Id=@id";
-            cmd.Parameters.AddWithValue("@id", id.Value);
-            return cmd.ExecuteScalar()?.ToString() ?? "Unknown";
-        }
-
-        public static long InsertPlayer(PlayerStruct player)
-        {
-            using var conn = GetConnection();
-            conn.Open();
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = "INSERT INTO Players(PlayerName) VALUES(@name)";
-            cmd.Parameters.AddWithValue("@name", player.PlayerName);
-            cmd.ExecuteNonQuery();
-
-            long id;
-            using (var cmd2 = conn.CreateCommand())
             {
-                cmd2.CommandText = "SELECT last_insert_rowid()";
-                id = (long)cmd2.ExecuteScalar();
+                options.Add((reader.GetInt32(0), reader.GetString(1)));
             }
 
-            foreach (var kvp in player.SingleOptions)
+            return options;
+        }
+
+        public static List<(string TableName, List<string> Rows)> GetAllTablesAndRows()
+        {
+            List<(string TableName, List<string> Rows)> result = new();
+
+            using var conn = GetConnection();
+            conn.Open();
+
+            // tatawagin mga tables (only show the two main tables for the normalized view)
+            using (var cmd = conn.CreateCommand())
             {
-                if (kvp.Value.HasValue)
+                cmd.CommandText = "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('Options', 'Players', 'PlayerAccessories') ORDER BY name;";
+                using var reader = cmd.ExecuteReader();
+
+                while (reader.Read())
                 {
-                    using var cmd2 = conn.CreateCommand();
-                    cmd2.CommandText = "INSERT INTO PlayerOptions(PlayerId, OptionId) VALUES(@pid, @oid)";
-                    cmd2.Parameters.AddWithValue("@pid", id);
-                    cmd2.Parameters.AddWithValue("@oid", kvp.Value.Value);
-                    cmd2.ExecuteNonQuery();
+                    string tableName = reader.GetString(0);
+                    result.Add((tableName, new List<string>()));
                 }
             }
 
-            foreach (var (usage, optId) in player.MultipleOptions)
+            // tatawagin mga rows
+            for (int i = 0; i < result.Count; i++)
             {
-                using var cmd2 = conn.CreateCommand();
-                cmd2.CommandText = "INSERT INTO PlayerOptions(PlayerId, OptionId) VALUES(@pid, @oid)";
-                cmd2.Parameters.AddWithValue("@pid", id);
-                cmd2.Parameters.AddWithValue("@oid", optId);
-                cmd2.ExecuteNonQuery();
+                var (tableName, rows) = result[i];
+
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = $"SELECT * FROM {tableName};";
+
+                using var reader = cmd.ExecuteReader();
+                int fieldCount = reader.FieldCount;
+
+                while (reader.Read())
+                {
+                    List<string> row = new();
+                    for (int f = 0; f < fieldCount; f++)
+                        row.Add($"{reader.GetName(f)}={reader.GetValue(f)}");
+
+                    rows.Add(string.Join(", ", row));
+                }
+
+                // re-assign modified tuple back into list
+                result[i] = (tableName, rows);
             }
 
-            return id;
-        }
-
-        public static List<(int Id, string Name, string SaveDate)> GetSavedGames()
-        {
-            var list = new List<(int, string, string)>();
-            using var conn = GetConnection();
-            conn.Open();
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT Id, PlayerName, SaveDate FROM Players ORDER BY Id";
-            using var reader = cmd.ExecuteReader();
-            while (reader.Read())
-                list.Add((reader.GetInt32(0), reader.GetString(1), reader.GetString(2)));
-            return list;
-        }
-
-        public static (Dictionary<string, int?> singleOptions, List<(string usage, int optionId)> multipleOptions, string playerName, string saveDate) GetPlayerWithOptions(int playerId)
-        {
-            var singleOptions = new Dictionary<string, int?>();
-            var multipleOptions = new List<(string usage, int optionId)>();
-            using var conn = GetConnection();
-            conn.Open();
-
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT PlayerName, SaveDate FROM Players WHERE Id=@id";
-            cmd.Parameters.AddWithValue("@id", playerId);
-            using var reader = cmd.ExecuteReader();
-            reader.Read();
-            string name = reader.GetString(0);
-            string date = reader.GetString(1);
-            reader.Close();
-
-            // get all options
-            using var cmd2 = conn.CreateCommand();
-            cmd2.CommandText = @"SELECT o.Category, o.Id FROM Options o
-                                 JOIN PlayerOptions po ON o.Id = po.OptionId
-                                 WHERE po.PlayerId=@pid";
-            cmd2.Parameters.AddWithValue("@pid", playerId);
-            using var r2 = cmd2.ExecuteReader();
-            while (r2.Read())
-            {
-                string cat = r2.GetString(0);
-                int oid = r2.GetInt32(1);
-                // categorize into single/multiple
-                if (singleOptions.ContainsKey(cat))
-                {
-                    multipleOptions.Add((cat, oid));
-                }
-                else
-                {
-                    singleOptions[cat] = oid;
-                }
-            }
-
-            return (singleOptions, multipleOptions, name, date);
-        }
-
-        public static void DeletePlayer(int playerId)
-        {
-            using var conn = GetConnection();
-            conn.Open();
-            using var cmd = conn.CreateCommand();
-            cmd.CommandText = "DELETE FROM PlayerOptions WHERE PlayerId=@pid";
-            cmd.Parameters.AddWithValue("@pid", playerId);
-            cmd.ExecuteNonQuery();
-
-            using var cmd2 = conn.CreateCommand();
-            cmd2.CommandText = "DELETE FROM Players WHERE Id=@pid";
-            cmd2.Parameters.AddWithValue("@pid", playerId);
-            cmd2.ExecuteNonQuery();
+            return result;
         }
     }
 }

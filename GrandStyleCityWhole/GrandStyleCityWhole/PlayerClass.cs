@@ -1,22 +1,45 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace GrandStyleCityWhole
 {
+    //Struct
     public struct PlayerStruct
     {
         public string PlayerName;
+        public int GenderId; // Changed to int and renamed to Id
+        public int HairId;
+        public int HairCustomizationId;
+        public int HairColorId;
+        public int FaceShapeId;
+        public int NoseShapeId;
+        public int EyeColorId;
+        public int SkinToneId;
+        public int BodyTypeId;
+        public int TopAttireId;
+
+        // The lists now store the Option Id (int) for multiple accessories
+        public List<int> EarringsList;
+        public List<int> NecklacesList;
+        public List<int> BraceletsList;
+        public List<int> RingsList;
+
+        public int ShoesId;
+        public int ShoeColorId;
+        public int PoseId;
+        public int VideoModeId;
+        public int BackgroundId;
+        public int PetId;
+        public int WalkAnimationId;
         public string SaveDate;
 
-        // For single-selection options (Gender, Hair, FaceShape, etc.)
-        public Dictionary<string, int?> SingleOptions;
-
-        // For multiple-selection options (Earrings, Rings, Bracelets, etc.)
-        public List<(string usage, int optionId)> MultipleOptions;
 
         public void InitializeLists()
         {
-            SingleOptions = new Dictionary<string, int?>();
-            MultipleOptions = new List<(string, int)>();
+            EarringsList = new List<int>();
+            NecklacesList = new List<int>();
+            BraceletsList = new List<int>();
+            RingsList = new List<int>();
         }
     }
 }
